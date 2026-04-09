@@ -10,8 +10,8 @@ export default function Whatsapp() {
   const mensajesEndRef = useRef(null);
 
   // 👇 PEGA TU TOKEN LARGO DE META AQUÍ ADENTRO DE LAS COMILLAS 👇
-  const META_TOKEN = 'AQUI_VA_TU_TOKEN_TEMPORAL'; 
-  const PHONE_NUMBER_ID = '1028322937034614'; // Este es tu ID exacto
+  const META_TOKEN = 'EAANpHFjJwa8BRHyg7MIJKFCxxTo6uwvIJVg6iMIDAf55qpIS5OhPdJ1iVXuKJkt822XNFxjaPT69KjVsJf7uN07xHuieZAZCyQwI5XS1qX1N1jGugp3fpqkSsVlZAYOPuXIpZAI5HQRxhnyZB05VN3ptRsn3mpGEdHgYB9L8zJxPN9pDItQR74ZBIGinw7TXcJ5wZDZD'; 
+  const PHONE_NUMBER_ID = '10283229370346141019002074637724'; // Este es tu ID exacto
 
   useEffect(() => {
     cargarMensajes();
