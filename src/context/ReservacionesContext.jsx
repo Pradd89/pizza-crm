@@ -16,13 +16,11 @@ export function ReservacionesProvider({ children }) {
   const cargarDatosDashboard = useCallback(async () => {
     const hoy = new Date().toISOString().split('T')[0];
     
-    // Obtener reservas de hoy
     const { data: reservasHoy } = await supabase
       .from('reservaciones')
       .select('*')
       .eq('fecha', hoy);
     
-    // Obtener cumpleaños del mes
     const mesActual = new Date().getMonth() + 1;
     const { data: cumpleanosData } = await supabase
       .from('cumpleanos')
@@ -30,19 +28,16 @@ export function ReservacionesProvider({ children }) {
       .gte('fecha', `${new Date().getFullYear()}-${mesActual}-01`)
       .lte('fecha', `${new Date().getFullYear()}-${mesActual}-31`);
     
-    // Obtener mesas libres (simulado por ahora)
     const { data: mesas } = await supabase
       .from('mesas')
       .select('*')
       .eq('estado', 'disponible');
     
-    // Obtener mensajes pendientes
     const { data: mensajesPendientes } = await supabase
       .from('mensajes_whatsapp')
       .select('*')
       .eq('estado', 'pendiente');
     
-    // Obtener próximas reservas
     const { data: proximasReservas } = await supabase
       .from('reservaciones')
       .select('*')
@@ -66,7 +61,6 @@ export function ReservacionesProvider({ children }) {
     setRefreshTrigger(prev => prev + 1);
   }, [cargarDatosDashboard]);
 
-  // Cargar datos iniciales
   useState(() => {
     cargarDatosDashboard();
   }, [cargarDatosDashboard]);

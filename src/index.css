@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Estilos base para la app */
 * {
   margin: 0;
   padding: 0;
@@ -14,11 +13,34 @@ body {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-page);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
-  margin: 0;
-  padding: 0;
+}
+
+/* Variables para tema claro (default) */
+:root {
+  --bg-page: #f3f4f6;
+  --bg-card: #ffffff;
+  --bg-sidebar: #ffffff;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+  --hover-bg: #f9fafb;
+  --color-primary: #dc2626;
+}
+
+/* Modo oscuro */
+body.dark-mode {
+  --bg-page: #1a1a2e;
+  --bg-card: #16213e;
+  --bg-sidebar: #0f0f1a;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --border-color: #2a2a4a;
+  --hover-bg: #1e1e3a;
 }

@@ -13,15 +13,17 @@ import {
   ChevronRight
 } from 'lucide-react';
 import Reservaciones from './Reservaciones';
-import { useReservaciones } from '../context/ReservacionesContext';
 import Whatsapp from './Whatsapp';
+import Configuracion from './Configuracion';
+import Cumpleanos from './Cumpleanos';
+import { useReservaciones } from '../context/ReservacionesContext';
+import { useConfiguracion } from '../context/ConfiguracionContext';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { stats, reservasRecientes, refreshDashboard, cargarDatosDashboard } = useReservaciones();
-
-  // NUEVO ESTADO: Asegura el conteo exacto de "Hoy" usando la fecha local
+  const { config: configuracion } = useConfiguracion();
   const [reservasHoyConteo, setReservasHoyConteo] = useState(0);
 
   const handleLogout = async () => {
@@ -37,7 +39,6 @@ export default function Dashboard() {
     { name: 'Configuración', icon: <Settings size={20} /> },
   ];
 
-  // Escuchar cambios en las reservaciones (Suscripción en tiempo real)
   useEffect(() => {
     const subscription = supabase
       .channel('reservaciones_changes')
@@ -54,20 +55,13 @@ export default function Dashboard() {
     };
   }, [refreshDashboard]);
 
-  // Cargar datos iniciales del contexto
   useEffect(() => {
     cargarDatosDashboard();
   }, []);
 
-  // NUEVO EFECTO: Consulta directa a Supabase filtrando por la fecha local.
   useEffect(() => {
     const obtenerReservasDeHoy = async () => {
-      const date = new Date();
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hoy = `${year}-${month}-${day}`;
-
+      const hoy = new Date().toISOString().split('T')[0];
       const { count, error } = await supabase
         .from('reservaciones')
         .select('*', { count: 'exact', head: true })
@@ -78,9 +72,8 @@ export default function Dashboard() {
         setReservasHoyConteo(count || 0);
       }
     };
-
     obtenerReservasDeHoy();
-  }, [stats]); 
+  }, [stats]);
 
   const statsCards = [
     { title: 'Reservas Hoy', value: reservasHoyConteo, color: '#3b82f6', bg: '#eff6ff', icon: <Calendar size={24} /> },
@@ -97,18 +90,20 @@ export default function Dashboard() {
     }
   };
 
+  const colorPrimario = configuracion?.color_primario || '#dc2626';
+
   return (
     <div style={{ 
       display: 'flex', 
       height: '100vh', 
-      backgroundColor: '#f3f4f6',
+      backgroundColor: 'var(--bg-page)',
       fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
     }}>
       {/* SIDEBAR */}
       <div style={{
         width: sidebarCollapsed ? '80px' : '280px',
-        backgroundColor: '#ffffff',
-        borderRight: '1px solid #e5e7eb',
+        backgroundColor: 'var(--bg-sidebar)',
+        borderRight: `1px solid var(--border-color)`,
         display: 'flex',
         flexDirection: 'column',
         transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -121,8 +116,8 @@ export default function Dashboard() {
             position: 'absolute',
             right: '-12px',
             top: '28px',
-            backgroundColor: 'white',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'var(--bg-card)',
+            border: `1px solid var(--border-color)`,
             borderRadius: '50%',
             width: '24px',
             height: '24px',
@@ -134,11 +129,11 @@ export default function Dashboard() {
             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f3f4f6';
+            e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
             e.currentTarget.style.transform = 'scale(1.05)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'white';
+            e.currentTarget.style.backgroundColor = 'var(--bg-card)';
             e.currentTarget.style.transform = 'scale(1)';
           }}
         >
@@ -150,15 +145,15 @@ export default function Dashboard() {
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
-          color: '#dc2626',
+          color: colorPrimario,
           fontWeight: 'bold',
           fontSize: sidebarCollapsed ? '0' : '24px',
           justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-          borderBottom: '1px solid #f3f4f6',
+          borderBottom: `1px solid var(--border-color)`,
           marginBottom: '8px'
         }}>
           <Pizza size={36} />
-          {!sidebarCollapsed && <span style={{ fontSize: '24px', letterSpacing: '-0.5px' }}>PizzaCRM</span>}
+          {!sidebarCollapsed && <span style={{ fontSize: '24px', letterSpacing: '-0.5px' }}>{configuracion?.restaurante_nombre || 'PizzaCRM'}</span>}
         </div>
 
         <nav style={{
@@ -183,8 +178,8 @@ export default function Dashboard() {
                 fontSize: '14px',
                 border: 'none',
                 cursor: 'pointer',
-                backgroundColor: activeTab === item.name ? '#fef2f2' : 'transparent',
-                color: activeTab === item.name ? '#dc2626' : '#6b7280',
+                backgroundColor: activeTab === item.name ? `${colorPrimario}20` : 'transparent',
+                color: activeTab === item.name ? colorPrimario : 'var(--text-secondary)',
                 justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
                 transition: 'all 0.2s',
                 marginBottom: '4px'
@@ -192,21 +187,21 @@ export default function Dashboard() {
               title={sidebarCollapsed ? item.name : ''}
               onMouseEnter={(e) => {
                 if (activeTab !== item.name) {
-                  e.currentTarget.style.backgroundColor = '#f9fafb';
-                  e.currentTarget.style.color = '#374151';
+                  e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (activeTab !== item.name) {
                   e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = '#6b7280';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
                 }
               }}
             >
               {item.icon}
               {!sidebarCollapsed && <span>{item.name}</span>}
               {!sidebarCollapsed && activeTab === item.name && (
-                <div style={{ marginLeft: 'auto', width: '4px', height: '4px', backgroundColor: '#dc2626', borderRadius: '50%' }} />
+                <div style={{ marginLeft: 'auto', width: '4px', height: '4px', backgroundColor: colorPrimario, borderRadius: '50%' }} />
               )}
             </button>
           ))}
@@ -214,7 +209,7 @@ export default function Dashboard() {
 
         <div style={{
           padding: '20px 16px',
-          borderTop: '1px solid #f3f4f6',
+          borderTop: `1px solid var(--border-color)`,
           marginTop: 'auto'
         }}>
           <button
@@ -231,18 +226,18 @@ export default function Dashboard() {
               border: 'none',
               cursor: 'pointer',
               backgroundColor: 'transparent',
-              color: '#6b7280',
+              color: 'var(--text-secondary)',
               justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
               transition: 'all 0.2s'
             }}
             title={sidebarCollapsed ? 'Cerrar Sesión' : ''}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#fef2f2';
-              e.currentTarget.style.color = '#dc2626';
+              e.currentTarget.style.backgroundColor = `${colorPrimario}20`;
+              e.currentTarget.style.color = colorPrimario;
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = '#6b7280';
+              e.currentTarget.style.color = 'var(--text-secondary)';
             }}
           >
             <LogOut size={20} />
@@ -257,12 +252,12 @@ export default function Dashboard() {
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        backgroundColor: '#f9fafb'
+        backgroundColor: 'var(--bg-page)'
       }}>
         <div style={{
           height: '72px',
-          backgroundColor: 'white',
-          borderBottom: '1px solid #e5e7eb',
+          backgroundColor: 'var(--bg-card)',
+          borderBottom: `1px solid var(--border-color)`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -272,7 +267,7 @@ export default function Dashboard() {
           <h2 style={{ 
             fontSize: '28px', 
             fontWeight: '700', 
-            color: '#111827',
+            color: 'var(--text-primary)',
             letterSpacing: '-0.5px'
           }}>{activeTab}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -281,12 +276,12 @@ export default function Dashboard() {
               border: 'none',
               background: 'transparent',
               cursor: 'pointer',
-              color: '#9ca3af',
+              color: 'var(--text-secondary)',
               borderRadius: '8px',
               position: 'relative',
               transition: 'all 0.2s'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <Bell size={22} />
@@ -299,14 +294,14 @@ export default function Dashboard() {
                   height: '8px',
                   backgroundColor: '#ef4444',
                   borderRadius: '50%',
-                  border: '2px solid white'
+                  border: '2px solid var(--bg-card)'
                 }} />
               )}
             </button>
             <div style={{
               width: '40px',
               height: '40px',
-              backgroundColor: '#dc2626',
+              backgroundColor: colorPrimario,
               color: 'white',
               borderRadius: '50%',
               display: 'flex',
@@ -335,11 +330,11 @@ export default function Dashboard() {
               }}>
                 {statsCards.map((stat, index) => (
                   <div key={index} style={{
-                    backgroundColor: 'white',
+                    backgroundColor: 'var(--bg-card)',
                     padding: '24px',
                     borderRadius: '20px',
                     boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
-                    border: '1px solid #f0f0f0',
+                    border: `1px solid var(--border-color)`,
                     transition: 'all 0.3s ease',
                     cursor: 'pointer'
                   }}
@@ -365,7 +360,7 @@ export default function Dashboard() {
                       {stat.icon}
                     </div>
                     <p style={{
-                      color: '#6b7280',
+                      color: 'var(--text-secondary)',
                       fontSize: '13px',
                       fontWeight: '600',
                       textTransform: 'uppercase',
@@ -375,7 +370,7 @@ export default function Dashboard() {
                     <p style={{
                       fontSize: '36px',
                       fontWeight: '800',
-                      color: '#111827',
+                      color: 'var(--text-primary)',
                       margin: 0
                     }}>{stat.value}</p>
                   </div>
@@ -389,29 +384,29 @@ export default function Dashboard() {
                 gap: '24px'
               }}>
                 <div style={{
-                  backgroundColor: 'white',
+                  backgroundColor: 'var(--bg-card)',
                   borderRadius: '20px',
-                  border: '1px solid #f0f0f0',
+                  border: `1px solid var(--border-color)`,
                   overflow: 'hidden'
                 }}>
                   <div style={{
                     padding: '24px',
-                    borderBottom: '1px solid #f3f4f6',
-                    backgroundColor: '#fefefe'
+                    borderBottom: `1px solid var(--border-color)`,
+                    backgroundColor: 'var(--bg-card)'
                   }}>
                     <h3 style={{ 
                       fontSize: '18px', 
                       fontWeight: '700', 
-                      color: '#111827',
+                      color: 'var(--text-primary)',
                       margin: 0
                     }}>Próximas Reservas</h3>
-                    <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
+                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                       {new Date().toLocaleDateString('es-ES', { weekday: 'long', month: 'long', day: 'numeric' })}
                     </p>
                   </div>
                   <div style={{ padding: '20px 24px 24px' }}>
                     {!reservasRecientes || reservasRecientes.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+                      <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
                         No hay reservas próximas
                       </div>
                     ) : (
@@ -423,13 +418,13 @@ export default function Dashboard() {
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             padding: '16px 0',
-                            borderBottom: i < reservasRecientes.length - 1 ? '1px solid #f3f4f6' : 'none'
+                            borderBottom: i < reservasRecientes.length - 1 ? `1px solid var(--border-color)` : 'none'
                           }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', flexWrap: 'wrap' }}>
                                 <span style={{
                                   fontWeight: '700',
-                                  color: '#111827',
+                                  color: 'var(--text-primary)',
                                   fontSize: '16px'
                                 }}>{reserva.cliente_nombre}</span>
                                 <span style={{
@@ -442,7 +437,7 @@ export default function Dashboard() {
                                   letterSpacing: '0.3px'
                                 }}>{estadoStyle.text}</span>
                               </div>
-                              <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: '#6b7280', flexWrap: 'wrap' }}>
+                              <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
                                 <span>🕒 {reserva.hora}</span>
                                 <span>👥 {reserva.personas} personas</span>
                                 {reserva.mesa && <span>🍽️ Mesa {reserva.mesa}</span>}
@@ -458,22 +453,24 @@ export default function Dashboard() {
                         width: '100%',
                         marginTop: '20px',
                         padding: '10px',
-                        backgroundColor: '#f3f4f6',
-                        border: 'none',
+                        backgroundColor: 'var(--hover-bg)',
+                        border: `1px solid var(--border-color)`,
                         borderRadius: '12px',
                         fontSize: '13px',
                         fontWeight: '500',
-                        color: '#374151',
+                        color: 'var(--text-primary)',
                         cursor: 'pointer',
                         transition: 'all 0.2s'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#dc2626';
+                        e.currentTarget.style.backgroundColor = colorPrimario;
                         e.currentTarget.style.color = 'white';
+                        e.currentTarget.style.borderColor = colorPrimario;
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f3f4f6';
-                        e.currentTarget.style.color = '#374151';
+                        e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+                        e.currentTarget.style.color = 'var(--text-primary)';
+                        e.currentTarget.style.borderColor = 'var(--border-color)';
                       }}
                     >
                       Ver todas las reservas →
@@ -482,36 +479,36 @@ export default function Dashboard() {
                 </div>
 
                 <div style={{
-                  backgroundColor: 'white',
+                  backgroundColor: 'var(--bg-card)',
                   borderRadius: '20px',
-                  border: '1px solid #f0f0f0',
+                  border: `1px solid var(--border-color)`,
                   padding: '24px',
                   textAlign: 'center'
                 }}>
                   <div style={{
                     width: '64px',
                     height: '64px',
-                    backgroundColor: '#fef2f2',
+                    backgroundColor: `${colorPrimario}20`,
                     borderRadius: '20px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     margin: '0 auto 16px',
-                    color: '#dc2626'
+                    color: colorPrimario
                   }}>
                     <Calendar size={32} />
                   </div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>
                     Calendario Rápido
                   </h3>
-                  <p style={{ fontSize: '14px', color: '#6b7280', lineHeight: '1.5', marginBottom: '20px' }}>
+                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '20px' }}>
                     Visualización mensual de reservas y eventos especiales.
                   </p>
                   <button
                     onClick={() => setActiveTab('Reservaciones')}
                     style={{
                       padding: '10px 20px',
-                      backgroundColor: '#dc2626',
+                      backgroundColor: colorPrimario,
                       color: 'white',
                       border: 'none',
                       borderRadius: '12px',
@@ -520,7 +517,7 @@ export default function Dashboard() {
                       transition: 'all 0.2s'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#b91c1c'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colorPrimario}
                   >
                     Ver calendario completo →
                   </button>
@@ -530,7 +527,7 @@ export default function Dashboard() {
               {/* Tarjeta de resumen */}
               <div style={{
                 marginTop: '24px',
-                background: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+                background: `linear-gradient(135deg, ${colorPrimario} 0%, ${colorPrimario}cc 100%)`,
                 borderRadius: '20px',
                 padding: '24px',
                 color: 'white'
@@ -562,29 +559,32 @@ export default function Dashboard() {
           )}
           
           {activeTab === 'Reservaciones' && <Reservaciones />}
-
-          {/* AQUÍ ESTÁ EL MÓDULO DE WHATSAPP INTEGRADO */}
           {activeTab === 'WhatsApp/FB' && <Whatsapp />}
+          {activeTab === 'Configuración' && <Configuracion />}
+          {activeTab === 'Cumpleaños' && <Cumpleanos />}
           
-          {/* AQUÍ ESTÁ LA PANTALLA DE CONSTRUCCIÓN PARA CUMPLEAÑOS Y CONFIGURACIÓN */}
-          {activeTab !== 'Dashboard' && activeTab !== 'Reservaciones' && activeTab !== 'WhatsApp/FB' && (
+          {activeTab !== 'Dashboard' && 
+           activeTab !== 'Reservaciones' && 
+           activeTab !== 'WhatsApp/FB' && 
+           activeTab !== 'Configuración' && 
+           activeTab !== 'Cumpleaños' && (
             <div style={{
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: 'white',
+              backgroundColor: 'var(--bg-card)',
               borderRadius: '24px',
-              border: '2px dashed #e5e7eb',
+              border: `2px dashed var(--border-color)`,
               padding: '80px 40px',
               margin: '32px'
             }}>
               <div style={{ fontSize: '64px', marginBottom: '24px' }}>🏗️</div>
-              <h2 style={{ fontSize: '28px', fontWeight: '700', color: '#111827', marginBottom: '12px' }}>
+              <h2 style={{ fontSize: '28px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px' }}>
                 Módulo de {activeTab}
               </h2>
-              <p style={{ fontSize: '16px', color: '#6b7280', maxWidth: '400px', textAlign: 'center', lineHeight: '1.5' }}>
+              <p style={{ fontSize: '16px', color: 'var(--text-secondary)', maxWidth: '400px', textAlign: 'center', lineHeight: '1.5' }}>
                 Estamos trabajando duro para integrar {activeTab} en tu CRM. Próximamente disponibles todas las funcionalidades.
               </p>
               <button 
@@ -592,7 +592,7 @@ export default function Dashboard() {
                 style={{
                   marginTop: '32px',
                   padding: '12px 32px',
-                  backgroundColor: '#dc2626',
+                  backgroundColor: colorPrimario,
                   color: 'white',
                   border: 'none',
                   borderRadius: '12px',
@@ -602,7 +602,7 @@ export default function Dashboard() {
                   transition: 'all 0.2s'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#b91c1c'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colorPrimario}
               >
                 Volver al Dashboard
               </button>
